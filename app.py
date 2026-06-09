@@ -1,5 +1,4 @@
 import json
-import os
 from pathlib import Path
 
 import joblib
@@ -11,11 +10,13 @@ import streamlit as st
 # Deployment-ready and compatible with improved training
 # ======================================================
 
-MODEL_PATH = "cervical_cancer_model.pkl"
-METRICS_PATH = "model_metrics.json"
-FEATURES_PATH = "model_features.json"
-COMPARISON_PATH = "model_comparison_results.csv"
-IMPORTANCE_PATH = "feature_importance.csv"
+BASE_DIR = Path(__file__).resolve().parent
+
+MODEL_PATH = BASE_DIR / "cervical_cancer_model.pkl"
+METRICS_PATH = BASE_DIR / "model_metrics.json"
+FEATURES_PATH = BASE_DIR / "model_features.json"
+COMPARISON_PATH = BASE_DIR / "model_comparison_results.csv"
+IMPORTANCE_PATH = BASE_DIR / "feature_importance.csv"
 
 DEFAULT_FEATURES = [
     "Age",
@@ -75,31 +76,64 @@ BASIC_FEATURES = [
     "Dx:HPV",
 ]
 
+# Page settings must come before any other Streamlit display command
+st.set_page_config(
+    page_title="Cervical Cancer Risk Prediction",
+    page_icon="🩺",
+    layout="wide",
+)
+
 STYLE = """
 <style>
-    .main .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-        max-width: 1100px;
-    }
-    .hero-card {
-        padding: 1.4rem 1.6rem;
-        border-radius: 18px;
-        background: linear-gradient(135deg, #f7f0ff 0%, #eef7ff 100%);
-        border: 1px solid #e7d8ff;
-        margin-bottom: 1rem;
-    }
-    .risk-card {
-        padding: 1rem;
-        border-radius: 14px;
-        border: 1px solid #e6e6e6;
-        background: #fafafa;
-    }
-    .small-muted {
-        color: #666;
-        font-size: 0.92rem;
-    }
+.main .block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    max-width: 1100px;
+}
+
+.hero-card {
+    padding: 1.4rem 1.6rem;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #eaf4ff 0%, #ddebff 100%);
+    border: 1px solid #c6d8ff;
+    margin-bottom: 1rem;
+}
+
+.hero-title {
+    color: #102A43 !important;
+    font-size: 42px !important;
+    font-weight: 800 !important;
+    margin-bottom: 0.5rem;
+}
+
+.hero-subtitle {
+    color: #334E68 !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+}
+
+.risk-card {
+    padding: 1rem;
+    border-radius: 14px;
+    border: 1px solid #e6e6e6;
+    background: #fafafa;
+}
+
+.small-muted {
+    color: #666;
+    font-size: 0.92rem;
+}
 </style>
+"""
+
+HERO = """
+<div class="hero-card">
+    <div class="hero-title">🩺 Cervical Cancer Risk Prediction System</div>
+    <div class="hero-subtitle">
+        A machine learning decision-support prototype for estimating cervical cancer risk
+        using selected clinical, demographic, and behavioral factors.
+    </div>
+</div>
 """
 
 
@@ -112,7 +146,7 @@ def load_json(path, default=None):
 
 @st.cache_resource
 def load_model():
-    if not Path(MODEL_PATH).exists():
+    if not MODEL_PATH.exists():
         return None
     return joblib.load(MODEL_PATH)
 
@@ -134,7 +168,12 @@ def get_feature_list(metrics):
 
 
 def yes_no_input(label, key, default="No"):
-    answer = st.selectbox(label, ["No", "Yes"], index=0 if default == "No" else 1, key=key)
+    answer = st.selectbox(
+        label,
+        ["No", "Yes"],
+        index=0 if default == "No" else 1,
+        key=key,
+    )
     return 1 if answer == "Yes" else 0
 
 
@@ -276,13 +315,8 @@ def show_alert(level, message):
 # App layout
 # =========================
 
-st.set_page_config(
-    page_title="Cervical Cancer Risk Prediction",
-    page_icon="🩺",
-    layout="wide",
-)
-
 st.markdown(STYLE, unsafe_allow_html=True)
+st.markdown(HERO, unsafe_allow_html=True)
 
 model = load_model()
 metrics = load_json(METRICS_PATH, default={})
@@ -290,26 +324,13 @@ features = get_feature_list(metrics)
 comparison_df = load_csv(COMPARISON_PATH)
 importance_df = load_csv(IMPORTANCE_PATH)
 
-st.markdown(
-    """
-    <div class="hero-card">
-        <h1 style="margin-bottom: 0.2rem;">🩺 Cervical Cancer Risk Prediction System</h1>
-        <p style="font-size: 1.05rem; margin-bottom: 0;">
-            A machine learning decision-support prototype for estimating cervical cancer risk using selected clinical,
-            demographic, and behavioral factors.
-        </p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
 st.warning(
     "This system is for academic and decision-support purposes only. It must not be used as a final medical diagnosis."
 )
 
 if model is None:
     st.error(
-        "Model file not found. Run `python train_model.py` first so that `cervical_cancer_model.pkl` is created."
+        "Model file not found. Run `python train_model_improved.py` first so that `cervical_cancer_model.pkl` is created."
     )
     st.stop()
 
@@ -383,7 +404,7 @@ with evaluation_tab:
         st.subheader("Model Comparison Results")
         st.dataframe(comparison_df, use_container_width=True)
     else:
-        st.info("Model comparison file not found. Run the improved `train_model.py` to generate it.")
+        st.info("Model comparison file not found. Run the improved `train_model_improved.py` to generate it.")
 
     st.subheader("Feature Importance")
     if importance_df is not None and "Importance" in importance_df.columns:
@@ -393,7 +414,7 @@ with evaluation_tab:
         else:
             st.info("Feature importance is not available for the selected model type.")
     else:
-        st.info("Feature importance file not found. Run `python train_model.py` again.")
+        st.info("Feature importance file not found. Run `python train_model_improved.py` again.")
 
     st.subheader("Confusion Matrix")
     conf_matrix = metrics.get("Confusion Matrix")
