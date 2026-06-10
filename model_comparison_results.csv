@@ -1,6 +1,0 @@
-Model,Accuracy,Precision,Recall,F1 Score,Selection Score
-Logistic Regression,0.8023,0.1034,0.2727,0.15,0.2359
-Extra Trees,0.8372,0.0526,0.0909,0.0667,0.0836
-Random Forest,0.9186,0.0,0.0,0.0,0.0
-Support Vector Machine,0.8721,0.0,0.0,0.0,0.0
-Gradient Boosting,0.9302,0.0,0.0,0.0,0.0
